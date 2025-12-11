@@ -6,4 +6,4 @@ pub mod traits;
 pub use frame::Frame;
 pub use packet::Packet;
 pub use time::Timebase;
-pub use traits::{Decoder, Demuxer, Encoder, Muxer};
+pub use traits::{Decoder, Demuxer, Encoder, Muxer, Transform};
