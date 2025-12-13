@@ -1,5 +1,5 @@
 use crate::core::{Frame, Transform};
-use std::io::Result;
+use crate::io::IoResult;
 
 pub struct Normalize {
 	target_peak: f32,
@@ -16,7 +16,7 @@ impl Normalize {
 }
 
 impl Transform for Normalize {
-	fn apply(&mut self, mut frame: Frame) -> Result<Frame> {
+	fn apply(&mut self, mut frame: Frame) -> IoResult<Frame> {
 		let samples = frame.data.len() / 2;
 		if samples == 0 {
 			return Ok(frame);

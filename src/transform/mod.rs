@@ -5,9 +5,9 @@ pub use gain::Gain;
 pub use normalize::Normalize;
 
 use crate::core::Transform;
-use std::io::{Error, ErrorKind, Result};
+use crate::io::{IoError, IoErrorKind, IoResult};
 
-pub fn parse_transform(spec: &str) -> Result<Box<dyn Transform>> {
+pub fn parse_transform(spec: &str) -> IoResult<Box<dyn Transform>> {
 	let parts: Vec<&str> = spec.splitn(2, '=').collect();
 	let name = parts[0];
 
@@ -16,17 +16,19 @@ pub fn parse_transform(spec: &str) -> Result<Box<dyn Transform>> {
 			let factor = parts
 				.get(1)
 				.ok_or_else(|| {
-					Error::new(ErrorKind::InvalidInput, "gain requires a value (e.g., gain=2.0)")
+					IoError::with_message(IoErrorKind::InvalidData, "gain requires a value (e.g., gain=2.0)")
 				})?
 				.parse::<f32>()
-				.map_err(|_| Error::new(ErrorKind::InvalidInput, "gain value must be a number"))?;
+				.map_err(|_| {
+					IoError::with_message(IoErrorKind::InvalidData, "gain value must be a number")
+				})?;
 			Ok(Box::new(Gain::new(factor)))
 		}
 		"normalize" => {
 			let peak = parts.get(1).map(|v| v.parse::<f32>().unwrap_or(0.95)).unwrap_or(0.95);
 			Ok(Box::new(Normalize::new(peak)))
 		}
-		_ => Err(Error::new(ErrorKind::InvalidInput, format!("unknown transform: {}", name))),
+		_ => Err(IoError::with_message(IoErrorKind::InvalidData, "unknown transform")),
 	}
 }
 
@@ -55,7 +57,7 @@ impl Default for TransformChain {
 }
 
 impl Transform for TransformChain {
-	fn apply(&mut self, mut frame: crate::core::Frame) -> Result<crate::core::Frame> {
+	fn apply(&mut self, mut frame: crate::core::Frame) -> IoResult<crate::core::Frame> {
 		for transform in &mut self.transforms {
 			frame = transform.apply(frame)?;
 		}

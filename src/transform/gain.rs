@@ -1,5 +1,5 @@
 use crate::core::{Frame, Transform};
-use std::io::Result;
+use crate::io::IoResult;
 
 pub struct Gain {
 	factor: f32,
@@ -12,7 +12,7 @@ impl Gain {
 }
 
 impl Transform for Gain {
-	fn apply(&mut self, mut frame: Frame) -> Result<Frame> {
+	fn apply(&mut self, mut frame: Frame) -> IoResult<Frame> {
 		let samples = frame.data.len() / 2;
 		for i in 0..samples {
 			let offset = i * 2;
