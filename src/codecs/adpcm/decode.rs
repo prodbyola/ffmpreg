@@ -1,7 +1,7 @@
 use super::AdpcmState;
 use crate::container::WavFormat;
 use crate::core::{Decoder, Frame, Packet};
-use std::io::Result;
+use crate::io::IoResult;
 
 pub struct AdpcmDecoder {
 	format: WavFormat,
@@ -16,7 +16,7 @@ impl AdpcmDecoder {
 }
 
 impl Decoder for AdpcmDecoder {
-	fn decode(&mut self, packet: Packet) -> Result<Option<Frame>> {
+	fn decode(&mut self, packet: Packet) -> IoResult<Option<Frame>> {
 		let channels = self.format.channels as usize;
 		let mut output = Vec::with_capacity(packet.data.len() * 4);
 
@@ -46,7 +46,7 @@ impl Decoder for AdpcmDecoder {
 		Ok(Some(frame))
 	}
 
-	fn flush(&mut self) -> Result<Option<Frame>> {
+	fn flush(&mut self) -> IoResult<Option<Frame>> {
 		Ok(None)
 	}
 }

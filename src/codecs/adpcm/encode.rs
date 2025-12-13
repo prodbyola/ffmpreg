@@ -1,6 +1,6 @@
 use super::AdpcmState;
 use crate::core::{Encoder, Frame, Packet, Timebase};
-use std::io::Result;
+use crate::io::IoResult;
 
 pub struct AdpcmEncoder {
 	timebase: Timebase,
@@ -16,7 +16,7 @@ impl AdpcmEncoder {
 }
 
 impl Encoder for AdpcmEncoder {
-	fn encode(&mut self, frame: Frame) -> Result<Option<Packet>> {
+	fn encode(&mut self, frame: Frame) -> IoResult<Option<Packet>> {
 		let samples: Vec<i16> =
 			frame.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect();
 
@@ -40,7 +40,7 @@ impl Encoder for AdpcmEncoder {
 		Ok(Some(packet))
 	}
 
-	fn flush(&mut self) -> Result<Option<Packet>> {
+	fn flush(&mut self) -> IoResult<Option<Packet>> {
 		Ok(None)
 	}
 }
