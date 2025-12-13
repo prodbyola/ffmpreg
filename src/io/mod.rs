@@ -1,8 +1,13 @@
+mod cursor;
 mod reader;
 mod seek;
 mod writer;
 
-pub use reader::{BufferedReader, DEFAULT_BUFFER_SIZE, MediaRead, ReadPrimitives, StdReadAdapter};
+pub use cursor::Cursor;
+pub use reader::{
+	BufferedReader, BufferedWriter, DEFAULT_BUFFER_SIZE, MediaRead, ReadPrimitives, StdReadAdapter,
+};
+
 pub use seek::{MediaSeek, SeekFrom, SeekableReader, SeekableWriter, StdSeekAdapter};
 pub use writer::{MediaWrite, StdWriteAdapter, WritePrimitives};
 
