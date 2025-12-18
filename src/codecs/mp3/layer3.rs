@@ -2,10 +2,10 @@ use super::bits::BitReader;
 use super::header::{FrameHeader, MpegVersion};
 use super::huffman::{decode_huffman_pair, decode_huffman_quad};
 use super::sideinfo::{GranuleChannel, SideInfo};
-use super::synth::{apply_window, imdct_36, SynthesisFilterbank};
+use super::synth::{SynthesisFilterbank, apply_window, imdct_36};
 use super::tables::{
-	CA, CS, PRETAB, SCALEFACTOR_BAND_LONG, SCALEFACTOR_BAND_LONG_MPEG2, SCALEFACTOR_BAND_SHORT,
-	SCALEFACTOR_BAND_SHORT_MPEG2, SLEN_TABLE, get_sample_rate_index, HUFFMAN_TABLES,
+	CA, CS, HUFFMAN_TABLES, PRETAB, SCALEFACTOR_BAND_LONG, SCALEFACTOR_BAND_LONG_MPEG2,
+	SCALEFACTOR_BAND_SHORT, SCALEFACTOR_BAND_SHORT_MPEG2, SLEN_TABLE, get_sample_rate_index,
 };
 
 thread_local! {
@@ -39,11 +39,7 @@ impl Layer3Decoder {
 		}
 	}
 
-	pub fn decode_frame(
-		&mut self,
-		header: &FrameHeader,
-		frame_data: &[u8],
-	) -> Option<Vec<i16>> {
+	pub fn decode_frame(&mut self, header: &FrameHeader, frame_data: &[u8]) -> Option<Vec<i16>> {
 		let header_size = 4;
 		let crc_size = if header.crc_protection { 2 } else { 0 };
 		let side_info_start = header_size + crc_size;
@@ -78,7 +74,7 @@ impl Layer3Decoder {
 
 		{
 			let mut reader = BitReader::new(&decode_data);
-			
+
 			for gr in 0..num_granules {
 				let mut samples = [[0.0f32; 576]; 2];
 				let mut scalefactors = [[[0u8; 22]; 3]; 2];
@@ -248,7 +244,8 @@ impl Layer3Decoder {
 		let sr_idx = get_sample_rate_index(header.sample_rate);
 		let is_mpeg1 = header.version == MpegVersion::Mpeg1;
 
-		let sfb_long = if is_mpeg1 { &SCALEFACTOR_BAND_LONG[sr_idx] } else { &SCALEFACTOR_BAND_LONG_MPEG2[sr_idx] };
+		let sfb_long =
+			if is_mpeg1 { &SCALEFACTOR_BAND_LONG[sr_idx] } else { &SCALEFACTOR_BAND_LONG_MPEG2[sr_idx] };
 
 		let region1_start = sfb_long[(gc.region0_count + 1) as usize].min(576);
 		let region2_start = sfb_long[(gc.region0_count + gc.region1_count + 2) as usize].min(576);
@@ -330,8 +327,13 @@ impl Layer3Decoder {
 		let sr_idx = get_sample_rate_index(header.sample_rate);
 		let is_mpeg1 = header.version == MpegVersion::Mpeg1;
 
-		let sfb_long = if is_mpeg1 { &SCALEFACTOR_BAND_LONG[sr_idx] } else { &SCALEFACTOR_BAND_LONG_MPEG2[sr_idx] };
-		let sfb_short = if is_mpeg1 { &SCALEFACTOR_BAND_SHORT[sr_idx] } else { &SCALEFACTOR_BAND_SHORT_MPEG2[sr_idx] };
+		let sfb_long =
+			if is_mpeg1 { &SCALEFACTOR_BAND_LONG[sr_idx] } else { &SCALEFACTOR_BAND_LONG_MPEG2[sr_idx] };
+		let sfb_short = if is_mpeg1 {
+			&SCALEFACTOR_BAND_SHORT[sr_idx]
+		} else {
+			&SCALEFACTOR_BAND_SHORT_MPEG2[sr_idx]
+		};
 
 		let global_gain = gc.global_gain as f32;
 		let scalefac_scale = if gc.scalefac_scale { 1.0 } else { 0.5 };
@@ -348,7 +350,8 @@ impl Layer3Decoder {
 						if samples[i] != 0.0 {
 							let sign = samples[i].signum();
 							let val = samples[i].abs();
-							let exp = global_gain - 210.0 - 8.0 * gc.subblock_gain[0] as f32
+							let exp = global_gain
+								- 210.0 - 8.0 * gc.subblock_gain[0] as f32
 								- scalefac_scale * (sf + pretab);
 							samples[i] = sign * val.powf(4.0 / 3.0) * 2.0f32.powf(exp * 0.25);
 						}
@@ -365,8 +368,8 @@ impl Layer3Decoder {
 							if i < 576 && samples[i] != 0.0 {
 								let sign = samples[i].signum();
 								let val = samples[i].abs();
-								let exp = global_gain - 210.0 - 8.0 * gc.subblock_gain[window] as f32
-									- scalefac_scale * sf;
+								let exp =
+									global_gain - 210.0 - 8.0 * gc.subblock_gain[window] as f32 - scalefac_scale * sf;
 								samples[i] = sign * val.powf(4.0 / 3.0) * 2.0f32.powf(exp * 0.25);
 							}
 						}
@@ -383,8 +386,8 @@ impl Layer3Decoder {
 							if samples[i] != 0.0 {
 								let sign = samples[i].signum();
 								let val = samples[i].abs();
-								let exp = global_gain - 210.0 - 8.0 * gc.subblock_gain[window] as f32
-									- scalefac_scale * sf;
+								let exp =
+									global_gain - 210.0 - 8.0 * gc.subblock_gain[window] as f32 - scalefac_scale * sf;
 								samples[i] = sign * val.powf(4.0 / 3.0) * 2.0f32.powf(exp * 0.25);
 							}
 						}
@@ -433,7 +436,11 @@ impl Layer3Decoder {
 
 		let sr_idx = get_sample_rate_index(header.sample_rate);
 		let is_mpeg1 = header.version == MpegVersion::Mpeg1;
-		let sfb_short = if is_mpeg1 { &SCALEFACTOR_BAND_SHORT[sr_idx] } else { &SCALEFACTOR_BAND_SHORT_MPEG2[sr_idx] };
+		let sfb_short = if is_mpeg1 {
+			&SCALEFACTOR_BAND_SHORT[sr_idx]
+		} else {
+			&SCALEFACTOR_BAND_SHORT_MPEG2[sr_idx]
+		};
 
 		let mut temp = [0.0f32; 576];
 		let start_sfb = if gc.mixed_block { 3 } else { 0 };
