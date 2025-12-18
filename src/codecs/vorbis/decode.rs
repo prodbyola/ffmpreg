@@ -65,8 +65,8 @@ impl Decoder for VorbisDecoder {
 		}
 
 		let nb_samples = all_samples.len() / channels.max(1) as usize;
-		let frame = Frame::new(output, packet.timebase, sample_rate, channels, nb_samples)
-			.with_pts(packet.pts);
+		let frame =
+			Frame::new(output, packet.timebase, sample_rate, channels, nb_samples).with_pts(packet.pts);
 
 		Ok(Some(frame))
 	}
