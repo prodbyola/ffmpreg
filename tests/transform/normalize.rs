@@ -1,14 +1,19 @@
-use ffmpreg::core::{Frame, Timebase, Transform};
+use ffmpreg::core::{Frame, FrameAudio, Timebase, Transform};
 use ffmpreg::transform::Normalize;
 
 fn create_test_frame(samples: Vec<i16>) -> Frame {
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
 	let timebase = Timebase::new(1, 44100);
-	Frame::new(data, timebase, 44100, 1, samples.len())
+	let audio = FrameAudio::new(data, 44100, 1);
+	Frame::new_audio(audio, timebase, 0)
 }
 
 fn extract_samples(frame: &Frame) -> Vec<i16> {
-	frame.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect()
+	if let Some(audio_frame) = frame.audio() {
+		audio_frame.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect()
+	} else {
+		vec![]
+	}
 }
 
 #[test]
@@ -87,13 +92,16 @@ fn test_normalize_preserves_metadata() {
 	let samples: Vec<i16> = vec![500, 1000];
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
 	let timebase = Timebase::new(1, 48000);
-	let frame = Frame::new(data, timebase, 48000, 2, 1).with_pts(9999);
+	let audio = FrameAudio::new(data, 48000, 2);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(9999);
 
 	let result = normalize.apply(frame).unwrap();
 
 	assert_eq!(result.pts, 9999);
-	assert_eq!(result.sample_rate, 48000);
-	assert_eq!(result.channels, 2);
+	if let Some(audio_frame) = result.audio() {
+		assert_eq!(audio_frame.sample_rate, 48000);
+		assert_eq!(audio_frame.channels, 2);
+	}
 }
 
 #[test]
@@ -103,7 +111,7 @@ fn test_normalize_empty_frame() {
 
 	let result = normalize.apply(frame).unwrap();
 
-	assert!(result.data.is_empty());
+	assert!(result.is_empty());
 }
 
 #[test]

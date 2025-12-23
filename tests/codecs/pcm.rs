@@ -1,6 +1,6 @@
 use ffmpreg::codecs::{PcmDecoder, PcmEncoder};
 use ffmpreg::container::WavFormat;
-use ffmpreg::core::{Decoder, Encoder, Packet, Timebase};
+use ffmpreg::core::{Decoder, Encoder, Frame, FrameAudio, Packet, Timebase};
 
 fn create_test_format() -> WavFormat {
 	WavFormat { channels: 1, sample_rate: 44100, bit_depth: 16 }
@@ -21,9 +21,10 @@ fn test_pcm_decoder_basic() {
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
 
-	assert_eq!(frame.sample_rate, 44100);
-	assert_eq!(frame.channels, 1);
-	assert_eq!(frame.nb_samples, 512);
+	let audio = frame.audio().unwrap();
+	assert_eq!(audio.sample_rate, 44100);
+	assert_eq!(audio.channels, 1);
+	assert_eq!(audio.nb_samples, 512);
 }
 
 #[test]
@@ -37,9 +38,10 @@ fn test_pcm_decoder_stereo() {
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
 
-	assert_eq!(frame.sample_rate, 48000);
-	assert_eq!(frame.channels, 2);
-	assert_eq!(frame.nb_samples, 512);
+	let audio = frame.audio().unwrap();
+	assert_eq!(audio.sample_rate, 48000);
+	assert_eq!(audio.channels, 2);
+	assert_eq!(audio.nb_samples, 512);
 }
 
 #[test]
@@ -64,7 +66,7 @@ fn test_pcm_decoder_preserves_data() {
 	let packet = Packet::new(original_data.clone(), 0, timebase);
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
-	assert_eq!(frame.data, original_data);
+	assert_eq!(frame.audio().unwrap().data, original_data);
 }
 
 #[test]
@@ -81,7 +83,8 @@ fn test_pcm_encoder_basic() {
 	let timebase = Timebase::new(1, 44100);
 	let mut encoder = PcmEncoder::new(timebase);
 
-	let frame = ffmpreg::core::Frame::new(vec![0u8; 1024], timebase, 44100, 1, 512).with_pts(0);
+	let audio = FrameAudio::new(vec![0u8; 1024], 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -94,7 +97,8 @@ fn test_pcm_encoder_preserves_pts() {
 	let timebase = Timebase::new(1, 44100);
 	let mut encoder = PcmEncoder::new(timebase);
 
-	let frame = ffmpreg::core::Frame::new(vec![0u8; 256], timebase, 44100, 1, 128).with_pts(9999);
+	let audio = FrameAudio::new(vec![0u8; 256], 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(9999);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 	assert_eq!(packet.pts, 9999);
@@ -106,7 +110,8 @@ fn test_pcm_encoder_preserves_data() {
 	let mut encoder = PcmEncoder::new(timebase);
 
 	let original_data = vec![10, 20, 30, 40, 50, 60, 70, 80];
-	let frame = ffmpreg::core::Frame::new(original_data.clone(), timebase, 44100, 1, 4);
+	let audio = FrameAudio::new(original_data.clone(), 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 	assert_eq!(packet.data, original_data);

@@ -1,4 +1,6 @@
-use ffmpreg::core::{Decoder, Demuxer, Encoder, Frame, Muxer, Packet, Timebase, Transform};
+use ffmpreg::core::{
+	Decoder, Demuxer, Encoder, Frame, FrameAudio, Muxer, Packet, Timebase, Transform,
+};
 use ffmpreg::io::IoResult;
 
 struct MockDemuxer {
@@ -41,7 +43,8 @@ struct MockDecoder;
 
 impl Decoder for MockDecoder {
 	fn decode(&mut self, packet: Packet) -> IoResult<Option<Frame>> {
-		let frame = Frame::new(packet.data, packet.timebase, 44100, 1, 256).with_pts(packet.pts);
+		let audio = FrameAudio::new(packet.data, 44100, 1);
+		let frame = Frame::new_audio(audio, packet.timebase, 0).with_pts(packet.pts);
 		Ok(Some(frame))
 	}
 
@@ -56,7 +59,8 @@ struct MockEncoder {
 
 impl Encoder for MockEncoder {
 	fn encode(&mut self, frame: Frame) -> IoResult<Option<Packet>> {
-		let packet = Packet::new(frame.data, 0, self.timebase).with_pts(frame.pts);
+		let audio = frame.audio().expect("Expected audio frame");
+		let packet = Packet::new(audio.data.clone(), 0, self.timebase).with_pts(frame.pts);
 		Ok(Some(packet))
 	}
 
@@ -71,12 +75,14 @@ struct MockTransform {
 
 impl Transform for MockTransform {
 	fn apply(&mut self, mut frame: Frame) -> IoResult<Frame> {
-		for chunk in frame.data.chunks_exact_mut(2) {
-			let sample = i16::from_le_bytes([chunk[0], chunk[1]]);
-			let modified = sample.saturating_mul(self.multiplier);
-			let bytes = modified.to_le_bytes();
-			chunk[0] = bytes[0];
-			chunk[1] = bytes[1];
+		if let Some(audio_frame) = frame.audio_mut() {
+			for chunk in audio_frame.data.chunks_exact_mut(2) {
+				let sample = i16::from_le_bytes([chunk[0], chunk[1]]);
+				let modified = sample.saturating_mul(self.multiplier);
+				let bytes = modified.to_le_bytes();
+				chunk[0] = bytes[0];
+				chunk[1] = bytes[1];
+			}
 		}
 		Ok(frame)
 	}
@@ -130,7 +136,7 @@ fn test_decoder_trait() {
 	let frame = decoder.decode(packet).unwrap().unwrap();
 
 	assert_eq!(frame.pts, 100);
-	assert_eq!(frame.data, vec![1, 2, 3, 4]);
+	assert_eq!(frame.audio().unwrap().data, vec![1, 2, 3, 4]);
 }
 
 #[test]
@@ -138,7 +144,8 @@ fn test_encoder_trait() {
 	let timebase = Timebase::new(1, 44100);
 	let mut encoder = MockEncoder { timebase };
 
-	let frame = Frame::new(vec![1, 2, 3, 4], timebase, 44100, 1, 2).with_pts(200);
+	let audio = FrameAudio::new(vec![1, 2, 3, 4], 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(200);
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
 	assert_eq!(packet.pts, 200);
@@ -152,10 +159,13 @@ fn test_transform_trait() {
 
 	let samples: Vec<i16> = vec![100, 200];
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 2);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let result = transform.apply(frame).unwrap();
-	let output: Vec<i16> = result.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect();
+	let audio_result = result.audio().unwrap();
+	let output: Vec<i16> =
+		audio_result.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect();
 
 	assert_eq!(output, vec![200, 400]);
 	assert_eq!(transform.name(), "mock");

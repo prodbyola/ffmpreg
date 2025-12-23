@@ -136,3 +136,22 @@ pub fn create_test_y4m_no_colorspace() -> Vec<u8> {
 // pub fn cursor_from_bytes(data: Vec<u8>) -> Cursor<Vec<u8>> {
 // 	Cursor::new(data)
 // }
+
+// pub fn create_audio_frame(data: Vec<u8>, sample_rate: u32, channels: u8) -> ffmpreg::core::Frame {
+// 	use ffmpreg::core::{Frame, FrameAudio, Timebase};
+// 	let timebase = Timebase::new(1, sample_rate);
+// 	let audio = FrameAudio::new(data, sample_rate, channels);
+// 	Frame::new_audio(audio, timebase, 0)
+// }
+
+// pub fn create_video_frame(
+// 	data: Vec<u8>,
+// 	width: u32,
+// 	height: u32,
+// 	format: ffmpreg::core::VideoFormat,
+// ) -> ffmpreg::core::Frame {
+// 	use ffmpreg::core::{Frame, FrameVideo, Timebase};
+// 	let timebase = Timebase::new(1, 30);
+// 	let video = FrameVideo::new(data, width, height, format);
+// 	Frame::new_video(video, timebase, 0)
+// }

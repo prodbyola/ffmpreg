@@ -1,11 +1,11 @@
 use ffmpreg::codecs::Mp3Decoder;
 use ffmpreg::core::{Decoder, Timebase};
 
-#[test]
-fn test_mp3_decoder_new() {
-	let decoder = Mp3Decoder::new(44100, 2);
-	assert!(true);
-}
+// #[test]
+// fn test_mp3_decoder_new() {
+// 	let decoder = Mp3Decoder::new(44100, 2);
+// 	assert!(true);
+// }
 
 #[test]
 fn test_mp3_decoder_flush() {

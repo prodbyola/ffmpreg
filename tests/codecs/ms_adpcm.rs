@@ -1,6 +1,6 @@
 use ffmpreg::codecs::{MsAdpcmDecoder, MsAdpcmEncoder};
 use ffmpreg::container::WavFormat;
-use ffmpreg::core::{Decoder, Encoder, Frame, Packet, Timebase};
+use ffmpreg::core::{Decoder, Encoder, Frame, FrameAudio, Packet, Timebase};
 
 fn create_mono_format() -> WavFormat {
 	WavFormat { channels: 1, sample_rate: 44100, bit_depth: 16 }
@@ -17,7 +17,8 @@ fn test_ms_adpcm_encoder_basic() {
 
 	let samples: Vec<i16> = (0..256).map(|i| (i * 100) as i16).collect();
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 256);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -45,8 +46,9 @@ fn test_ms_adpcm_decoder_basic() {
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
 
-	assert_eq!(frame.channels, 1);
-	assert_eq!(frame.sample_rate, 44100);
+	let audio = frame.audio().unwrap();
+	assert_eq!(audio.channels, 1);
+	assert_eq!(audio.sample_rate, 44100);
 }
 
 #[test]
@@ -60,7 +62,8 @@ fn test_ms_adpcm_stereo_encoder() {
 		samples.push((-i * 50) as i16);
 	}
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 2, 256);
+	let audio = FrameAudio::new(data, 44100, 2);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -91,7 +94,7 @@ fn test_ms_adpcm_stereo_decoder() {
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
 
-	assert_eq!(frame.channels, 2);
+	assert_eq!(frame.audio().unwrap().channels, 2);
 }
 
 #[test]
@@ -101,7 +104,8 @@ fn test_ms_adpcm_roundtrip() {
 
 	let samples: Vec<i16> = (0..64).map(|i| ((i as f32 * 0.1).sin() * 10000.0) as i16).collect();
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 64).with_pts(1000);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(1000);
 
 	let mut encoder = MsAdpcmEncoder::new(timebase, 1, 64);
 	let packet = encoder.encode(frame).unwrap().unwrap();
@@ -109,7 +113,7 @@ fn test_ms_adpcm_roundtrip() {
 	let mut decoder = MsAdpcmDecoder::new(format, 64);
 	let decoded = decoder.decode(packet).unwrap().unwrap();
 
-	assert!(decoded.nb_samples > 0);
+	assert!(decoded.audio().unwrap().nb_samples > 0);
 	assert_eq!(decoded.pts, 1000);
 }
 
@@ -120,7 +124,8 @@ fn test_ms_adpcm_preserves_pts() {
 
 	let samples: Vec<i16> = vec![0; 256];
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 256).with_pts(9999);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(9999);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 	assert_eq!(packet.pts, 9999);
@@ -152,7 +157,8 @@ fn test_ms_adpcm_compression() {
 	let samples: Vec<i16> = (0..1024).map(|i| (i * 10) as i16).collect();
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
 	let original_size = data.len();
-	let frame = Frame::new(data, timebase, 44100, 1, 1024);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 

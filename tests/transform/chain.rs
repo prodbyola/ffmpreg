@@ -1,14 +1,16 @@
-use ffmpreg::core::{Frame, Timebase, Transform};
+use ffmpreg::core::{Frame, FrameAudio, Timebase, Transform};
 use ffmpreg::transform::{Normalize, TransformChain, Volume, parse_transform};
 
 fn create_test_frame(samples: Vec<i16>) -> Frame {
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
 	let timebase = Timebase::new(1, 44100);
-	Frame::new(data, timebase, 44100, 1, samples.len())
+	let audio = FrameAudio::new(data, 44100, 1);
+	Frame::new_audio(audio, timebase, 0)
 }
 
 fn extract_samples(frame: &Frame) -> Vec<i16> {
-	frame.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect()
+	let audio = frame.audio().expect("Expected audio frame");
+	audio.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect()
 }
 
 #[test]
@@ -91,13 +93,15 @@ fn test_chain_preserves_metadata() {
 	let samples: Vec<i16> = vec![100, 200];
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
 	let timebase = Timebase::new(1, 48000);
-	let frame = Frame::new(data, timebase, 48000, 2, 1).with_pts(5555);
+	let audio = FrameAudio::new(data, 48000, 2);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(5555);
 
 	let result = chain.apply(frame).unwrap();
 
 	assert_eq!(result.pts, 5555);
-	assert_eq!(result.sample_rate, 48000);
-	assert_eq!(result.channels, 2);
+	let audio_result = result.audio().unwrap();
+	assert_eq!(audio_result.sample_rate, 48000);
+	assert_eq!(audio_result.channels, 2);
 }
 
 #[test]

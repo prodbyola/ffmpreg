@@ -1,6 +1,6 @@
 use ffmpreg::codecs::{RawVideoDecoder, RawVideoEncoder};
 use ffmpreg::container::Y4mFormat;
-use ffmpreg::core::{Decoder, Encoder, Frame, Packet, Timebase};
+use ffmpreg::core::{Decoder, Encoder, Frame, FrameVideo, Packet, Timebase, VideoFormat};
 
 fn create_test_format() -> Y4mFormat {
 	Y4mFormat {
@@ -26,7 +26,7 @@ fn test_rawvideo_decoder_basic() {
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
 
-	assert_eq!(frame.data.len(), frame_size);
+	assert_eq!(frame.video().unwrap().data.len(), frame_size);
 	assert_eq!(frame.pts, 0);
 }
 
@@ -41,7 +41,7 @@ fn test_rawvideo_decoder_preserves_data() {
 	let packet = Packet::new(original_data.clone(), 0, timebase);
 
 	let frame = decoder.decode(packet).unwrap().unwrap();
-	assert_eq!(frame.data, original_data);
+	assert_eq!(frame.video().unwrap().data, original_data);
 }
 
 #[test]
@@ -73,7 +73,8 @@ fn test_rawvideo_encoder_basic() {
 	let mut encoder = RawVideoEncoder::new(timebase);
 
 	let data = vec![128u8; 384];
-	let frame = Frame::new(data, timebase, 30, 1, 1).with_pts(0);
+	let video = FrameVideo::new(data, 16, 16, VideoFormat::YUV420);
+	let frame = Frame::new_video(video, timebase, 0).with_pts(0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -87,7 +88,8 @@ fn test_rawvideo_encoder_preserves_data() {
 	let mut encoder = RawVideoEncoder::new(timebase);
 
 	let original_data: Vec<u8> = (0..256).map(|i| i as u8).collect();
-	let frame = Frame::new(original_data.clone(), timebase, 30, 1, 1);
+	let video = FrameVideo::new(original_data.clone(), 16, 16, VideoFormat::YUV420);
+	let frame = Frame::new_video(video, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 	assert_eq!(packet.data, original_data);
@@ -99,7 +101,8 @@ fn test_rawvideo_encoder_preserves_pts() {
 	let mut encoder = RawVideoEncoder::new(timebase);
 
 	let data = vec![0u8; 100];
-	let frame = Frame::new(data, timebase, 30, 1, 1).with_pts(9999);
+	let video = FrameVideo::new(data, 16, 16, VideoFormat::YUV420);
+	let frame = Frame::new_video(video, timebase, 0).with_pts(9999);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 	assert_eq!(packet.pts, 9999);

@@ -1,6 +1,6 @@
 use ffmpreg::codecs::{FlacDecoder, FlacEncoder};
 use ffmpreg::container::FlacFormat;
-use ffmpreg::core::{Decoder, Encoder, Frame, Timebase};
+use ffmpreg::core::{Decoder, Encoder, Frame, FrameAudio, Timebase};
 
 fn create_default_format() -> FlacFormat {
 	FlacFormat {
@@ -27,7 +27,8 @@ fn test_flac_encoder_basic() {
 		samples.push((-i * 10) as i16);
 	}
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 2, 4096);
+	let audio = FrameAudio::new(data, 44100, 2);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -41,7 +42,8 @@ fn test_flac_encoder_mono() {
 
 	let samples: Vec<i16> = (0..1024).map(|i| (i * 10) as i16).collect();
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 1024);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -55,7 +57,8 @@ fn test_flac_encoder_preserves_pts() {
 
 	let samples: Vec<i16> = vec![0; 256];
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 256).with_pts(12345);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0).with_pts(12345);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 	assert_eq!(packet.pts, 12345);
@@ -92,7 +95,8 @@ fn test_flac_encoder_different_sample_rates() {
 
 		let samples: Vec<i16> = (0..256).map(|i| i as i16).collect();
 		let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-		let frame = Frame::new(data, timebase, sample_rate, 1, 256);
+		let audio = FrameAudio::new(data, sample_rate, 1);
+		let frame = Frame::new_audio(audio, timebase, 0);
 
 		let packet = encoder.encode(frame).unwrap().unwrap();
 		assert!(!packet.data.is_empty());
@@ -106,7 +110,8 @@ fn test_flac_encoder_different_bit_depths() {
 
 	let samples: Vec<i16> = (0..256).map(|i| (i * 128) as i16).collect();
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 256);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let result = encoder.encode(frame);
 	assert!(result.is_ok());
@@ -119,7 +124,8 @@ fn test_flac_encoder_silent_audio() {
 
 	let samples: Vec<i16> = vec![0; 2048];
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 2, 1024);
+	let audio = FrameAudio::new(data, 44100, 2);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 
@@ -133,7 +139,8 @@ fn test_flac_encoder_varying_signal() {
 
 	let samples: Vec<i16> = (0..512).map(|i| ((i as f32 * 0.1).sin() * 20000.0) as i16).collect();
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	let frame = Frame::new(data, timebase, 44100, 1, 512);
+	let audio = FrameAudio::new(data, 44100, 1);
+	let frame = Frame::new_audio(audio, timebase, 0);
 
 	let packet = encoder.encode(frame).unwrap().unwrap();
 

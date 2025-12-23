@@ -1,4 +1,4 @@
-use ffmpreg::core::{Frame, Timebase, Transform};
+use ffmpreg::core::{Frame, FrameAudio, Timebase, Transform};
 use ffmpreg::transform::{
 	ChannelMixer, FadeIn, FadeOut, Highpass, Lowpass, PeakLimiter, Resample, RmsLimiter,
 };
@@ -6,7 +6,8 @@ use ffmpreg::transform::{
 fn create_test_frame(samples: Vec<i16>) -> Frame {
 	let timebase = Timebase::new(1, 44100);
 	let data: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
-	Frame::new(data, timebase, 44100, 1, samples.len())
+	let audio = FrameAudio::new(data, 44100, 1);
+	Frame::new_audio(audio, timebase, 0)
 }
 
 fn create_stereo_frame(left: Vec<i16>, right: Vec<i16>) -> Frame {
@@ -16,11 +17,13 @@ fn create_stereo_frame(left: Vec<i16>, right: Vec<i16>) -> Frame {
 		data.extend_from_slice(&l.to_le_bytes());
 		data.extend_from_slice(&r.to_le_bytes());
 	}
-	Frame::new(data, timebase, 44100, 2, left.len())
+	let audio = FrameAudio::new(data, 44100, 2);
+	Frame::new_audio(audio, timebase, 0)
 }
 
 fn extract_samples(frame: &Frame) -> Vec<i16> {
-	frame.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect()
+	let audio = frame.audio().expect("Expected audio frame");
+	audio.data.chunks(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect()
 }
 
 #[test]
@@ -31,8 +34,9 @@ fn test_highpass_filter() {
 	let mut highpass = Highpass::new(1000.0);
 	let result = highpass.apply(frame).unwrap();
 
-	assert_eq!(result.nb_samples, 512);
-	assert_eq!(result.channels, 1);
+	let audio = result.audio().unwrap();
+	assert_eq!(audio.nb_samples, 512);
+	assert_eq!(audio.channels, 1);
 }
 
 #[test]
@@ -43,8 +47,9 @@ fn test_lowpass_filter() {
 	let mut lowpass = Lowpass::new(500.0);
 	let result = lowpass.apply(frame).unwrap();
 
-	assert_eq!(result.nb_samples, 512);
-	assert_eq!(result.channels, 1);
+	let audio = result.audio().unwrap();
+	assert_eq!(audio.nb_samples, 512);
+	assert_eq!(audio.channels, 1);
 }
 
 #[test]
@@ -70,7 +75,7 @@ fn test_rms_limiter() {
 	let mut limiter = RmsLimiter::new(-10.0, 10.0, 44100);
 	let result = limiter.apply(frame).unwrap();
 
-	assert_eq!(result.nb_samples, 256);
+	assert_eq!(result.audio().unwrap().nb_samples, 256);
 }
 
 #[test]
@@ -81,8 +86,9 @@ fn test_resample_upsample() {
 	let mut resample = Resample::new(88200);
 	let result = resample.apply(frame).unwrap();
 
-	assert!(result.nb_samples > 100);
-	assert_eq!(result.sample_rate, 88200);
+	let audio = result.audio().unwrap();
+	assert!(audio.nb_samples > 100);
+	assert_eq!(audio.sample_rate, 88200);
 }
 
 #[test]
@@ -93,8 +99,9 @@ fn test_resample_downsample() {
 	let mut resample = Resample::new(22050);
 	let result = resample.apply(frame).unwrap();
 
-	assert!(result.nb_samples < 200);
-	assert_eq!(result.sample_rate, 22050);
+	let audio = result.audio().unwrap();
+	assert!(audio.nb_samples < 200);
+	assert_eq!(audio.sample_rate, 22050);
 }
 
 #[test]
@@ -105,8 +112,9 @@ fn test_channel_mixer_mono_to_stereo() {
 	let mut mixer = ChannelMixer::mono_to_stereo();
 	let result = mixer.apply(frame).unwrap();
 
-	assert_eq!(result.channels, 2);
-	assert_eq!(result.nb_samples, 4);
+	let audio = result.audio().unwrap();
+	assert_eq!(audio.channels, 2);
+	assert_eq!(audio.nb_samples, 4);
 
 	let output = extract_samples(&result);
 	assert_eq!(output[0], 1000);
@@ -124,8 +132,9 @@ fn test_channel_mixer_stereo_to_mono() {
 	let mut mixer = ChannelMixer::stereo_to_mono();
 	let result = mixer.apply(frame).unwrap();
 
-	assert_eq!(result.channels, 1);
-	assert_eq!(result.nb_samples, 4);
+	let audio = result.audio().unwrap();
+	assert_eq!(audio.channels, 1);
+	assert_eq!(audio.nb_samples, 4);
 
 	let output = extract_samples(&result);
 	assert_eq!(output[0], 1000);
