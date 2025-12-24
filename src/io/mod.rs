@@ -1,6 +1,7 @@
 mod cursor;
 mod reader;
 mod seek;
+mod stdio;
 mod writer;
 
 pub use cursor::Cursor;
