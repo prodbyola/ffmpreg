@@ -1,5 +1,7 @@
-use crate::core::{Frame, Packet};
-use crate::io::Result;
+use crate::{
+	core::{frame::Frame, packet::Packet},
+	io::Result,
+};
 
 pub trait Decoder {
 	fn decode(&mut self, packet: Packet) -> Result<Option<Frame>>;

@@ -171,6 +171,22 @@ impl Compatible {
 		ogg_audio.supports_audio([codecs::audio::VORBIS, codecs::audio::OPUS]);
 		graph.insert(container::OGG, ogg_audio);
 
+		let mut raw = ContainerCompatible::new(container::RAW);
+		raw.supports_audio([
+			codecs::audio::PCM_S16LE,
+			codecs::audio::PCM_S24LE,
+			codecs::audio::PCM_F32LE,
+		]);
+		graph.insert(container::RAW, raw);
+
+		let mut pcm = ContainerCompatible::new(container::PCM);
+		pcm.supports_audio([
+			codecs::audio::PCM_S16LE,
+			codecs::audio::PCM_S24LE,
+			codecs::audio::PCM_F32LE,
+		]);
+		graph.insert(container::PCM, pcm);
+
 		Self { graph }
 	}
 

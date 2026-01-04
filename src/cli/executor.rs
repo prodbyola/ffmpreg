@@ -34,11 +34,20 @@ pub fn execute(cli: cli::Cli) -> io::Result<()> {
 		pipe.with_subtitle(subtitle);
 	}
 
-	match input_ext.as_str() {
-		container::WAV => pipeline::run_wav(pipe),
-		container::AAC => pipeline::run_aac(pipe),
-		container::MOV => pipeline::run_mov(pipe),
-
-		_ => Err(io::Error::invalid_data(format!("unsupported '{}' format", input_ext))),
+	// Route based on output format first for clarity
+	match output_ext.as_str() {
+		container::WAV => pipeline::wav::run(pipe),
+		container::RAW | container::PCM => pipeline::raw::run(pipe),
+		_ => {
+			// Fall back to input-based routing
+			match input_ext.as_str() {
+				container::WAV => pipeline::wav::run(pipe),
+				container::RAW | container::PCM => pipeline::raw::run(pipe),
+				// container::AAC => pipeline::aac::run(pipe),
+				// container::MKV => pipeline::mkv::run(pipe),
+				container::MOV => pipeline::webm::run(pipe),
+				_ => Err(io::Error::invalid_data(format!("unsupported '{}' format", input_ext))),
+			}
+		}
 	}
 }

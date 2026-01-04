@@ -22,9 +22,9 @@ pub fn print_warning(message: impl std::fmt::Display) {
 pub fn print_success(message: Option<String>) {
 	if let Some(message) = message {
 		let message = format!("{}{}{}", COLOR_WHITE, message, COLOR_RESET);
-		let tag = format!("{}success: {}", COLOR_GREEN, COLOR_RESET);
+		let tag = format!("{}ok: {}", COLOR_YELLOW, COLOR_RESET);
 		println!("{}{}", tag, message);
 	}
-	let tag = format!("{}done.{}", COLOR_GREEN, COLOR_RESET);
-	println!("{}{}", tag, COLOR_RESET);
+	let tag = format!("{}ok.{}", COLOR_GREEN, COLOR_RESET);
+	println!("{}", tag);
 }

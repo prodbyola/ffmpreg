@@ -2,11 +2,10 @@ mod audio;
 mod subtitle;
 mod video;
 
+use crate::core::time::Time;
 pub use audio::*;
 pub use subtitle::*;
 pub use video::*;
-
-use crate::core::Time;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FrameKind {

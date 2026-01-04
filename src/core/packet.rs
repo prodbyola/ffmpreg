@@ -26,6 +26,11 @@ impl Packet {
 		self
 	}
 
+	pub fn with_keyframe(mut self, keyframe: bool) -> Self {
+		self.keyframe = keyframe;
+		self
+	}
+
 	pub fn size(&self) -> usize {
 		self.data.len()
 	}

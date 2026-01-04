@@ -1,5 +1,8 @@
 use crate::container::wav::{WavFormat, WavMetadata};
-use crate::core::{Muxer, Packet, Stream, StreamKind, Time, stream};
+use crate::core::Muxer;
+use crate::core::packet::Packet;
+use crate::core::stream::{self, Stream, StreamKind};
+use crate::core::time::Time;
 use crate::io::{MediaSeek, MediaWrite, Result, SeekFrom, WritePrimitives};
 
 pub struct WavMuxer<W: MediaWrite + MediaSeek> {
@@ -28,8 +31,8 @@ impl<W: MediaWrite + MediaSeek> WavMuxer<W> {
 		Ok(Self { writer, format, streams, metadata: None, data_size: 0, data_size_pos, file_size_pos })
 	}
 
-	pub fn with_metadata(&mut self, metadata: WavMetadata) {
-		self.metadata = Some(metadata);
+	pub fn with_metadata(&mut self, metadata: Option<WavMetadata>) {
+		self.metadata = metadata;
 	}
 
 	fn write_header(writer: &mut W, format: &WavFormat) -> Result<(u64, u64)> {

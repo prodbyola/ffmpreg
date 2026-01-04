@@ -1,4 +1,4 @@
-use crate::core::Packet;
+use crate::core::packet::Packet;
 use crate::core::stream::Streams;
 use crate::io::Result;
 

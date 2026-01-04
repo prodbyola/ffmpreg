@@ -1,6 +1,7 @@
 use super::header::WavHeader;
 use super::{WavFormat, WavMetadata};
-use crate::core::{Demuxer, Packet, Stream, StreamKind, Time, stream};
+use crate::core::packet::Packet;
+use crate::core::{Demuxer, stream, time};
 use crate::io::{Error, MediaRead, ReadPrimitives, Result};
 
 pub struct WavDemuxer<R: MediaRead> {
@@ -23,8 +24,8 @@ impl<R: MediaRead> WavDemuxer<R> {
 		let format = header.to_format();
 
 		let codec_name = format.to_codec_string().to_string();
-		let time = Time::new(1, header.sample_rate);
-		let stream = Stream::new(0, 0, StreamKind::Audio, codec_name, time);
+		let time = time::Time::new(1, header.sample_rate);
+		let stream = stream::Stream::new(0, 0, stream::StreamKind::Audio, codec_name, time);
 		let streams = stream::Streams::new(vec![stream]);
 
 		Ok(Self {
@@ -169,7 +170,7 @@ impl<R: MediaRead> WavDemuxer<R> {
 		data.truncate(bytes_read);
 		self.data_remaining -= bytes_read as u64;
 
-		let time = Time::new(1, self.format.sample_rate);
+		let time = time::Time::new(1, self.format.sample_rate);
 		let packet = Packet::new(data, 0, time).with_pts(self.sample_position as i64);
 
 		self.sample_position += (bytes_read / self.format.bytes_per_frame()) as u64;

@@ -1,9 +1,9 @@
+pub mod converter;
 pub mod demuxer;
 pub mod formater;
 pub mod header;
 pub mod metadata;
 pub mod muxer;
-pub mod pcm_converter;
 pub mod utils;
 pub use demuxer::WavDemuxer;
 pub use formater::*;

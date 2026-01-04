@@ -1,4 +1,5 @@
-use crate::core::{Decoder, Encoder, Packet};
+use crate::core::packet::Packet;
+use crate::core::{Decoder, Encoder};
 use crate::io;
 
 pub struct Transcoder {

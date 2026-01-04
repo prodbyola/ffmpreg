@@ -1,4 +1,5 @@
-use crate::core::{Frame, Packet};
+use crate::core::frame::Frame;
+use crate::core::packet::Packet;
 use crate::io::Result;
 
 pub trait Encoder {

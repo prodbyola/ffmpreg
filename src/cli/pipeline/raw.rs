@@ -8,14 +8,12 @@ use crate::io::{Error, File, Result};
 
 pub fn run(pipeline: Pipeline) -> Result<()> {
 	let input_extension = utils::get_extension(&pipeline.input)?;
-	let mut format = wav::WavFormat::default();
-	let mut metadata = None;
+	let mut format = raw::RawPcmFormat::default();
 
 	if input_extension == container::WAV {
 		let file = File::open(&pipeline.input)?;
 		let demuxer = wav::WavDemuxer::new(file)?;
-		format = demuxer.format();
-		metadata = Some(demuxer.metadata().clone())
+		format = demuxer.format().to_raw_format();
 	}
 
 	let mut target_format = format;
@@ -24,10 +22,9 @@ pub fn run(pipeline: Pipeline) -> Result<()> {
 	}
 
 	let output_file = File::create(&pipeline.output)?;
-	let mut muxer = wav::WavMuxer::new(output_file, target_format)?;
-	muxer.with_metadata(metadata);
+	let mut muxer = raw::RawPcmMuxer::new(output_file, target_format)?;
 
-	let mut demuxer = create_demuxer(&pipeline.input, &input_extension, format)?;
+	let mut demuxer = create_demuxer(&pipeline.input, format, &input_extension)?;
 	let mut transcoder = create_transcoder(format, target_format);
 
 	while let Some(packet) = demuxer.read_packet()? {
@@ -43,24 +40,29 @@ pub fn run(pipeline: Pipeline) -> Result<()> {
 	muxer.finalize()
 }
 
-fn create_demuxer(path: &str, extension: &str, format: wav::WavFormat) -> Result<Box<dyn Demuxer>> {
+fn create_demuxer(
+	path: &str,
+	format: raw::RawPcmFormat,
+	extension: &str,
+) -> Result<Box<dyn Demuxer>> {
 	let file = File::open(path)?;
 	if extension == container::WAV {
-		return Ok(Box::new(wav::WavDemuxer::new(file)?));
+		let demuxer = wav::WavDemuxer::new(file)?;
+		return Ok(Box::new(demuxer));
 	}
-	let demuxer = raw::RawPcmDemuxer::new(file, format.to_raw_format())?;
+	let demuxer = raw::RawPcmDemuxer::new(file, format)?;
 	Ok(Box::new(demuxer))
 }
 
-fn create_transcoder(format: wav::WavFormat, target_format: wav::WavFormat) -> media::Transcoder {
-	let decoder = PcmDecoder::new_from_metadata(&format);
+fn create_transcoder(format: raw::RawPcmFormat, target: raw::RawPcmFormat) -> media::Transcoder {
+	let decoder = PcmDecoder::new(format.sample_rate, format.channels, format.bytes_per_sample());
 
-	if format.audio_format() != target_format.audio_format() {
-		let encoder = PcmEncoder::new(target_format.sample_rate);
-		let encoder = encoder.with_target_format(target_format.audio_format());
+	if format.audio_format() != target.audio_format() {
+		let encoder = PcmEncoder::new(target.sample_rate);
+		let encoder = encoder.with_target_format(target.audio_format());
 		return media::Transcoder::new(Box::new(decoder), Box::new(encoder));
 	}
 
-	let encoder = PcmEncoder::new(target_format.sample_rate);
+	let encoder = PcmEncoder::new(target.sample_rate);
 	media::Transcoder::new(Box::new(decoder), Box::new(encoder))
 }

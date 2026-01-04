@@ -1,41 +1,27 @@
 use crate::codecs;
-use crate::container::raw;
-pub use crate::container::wav::demuxer::WavDemuxer;
-pub use crate::container::wav::metadata::WavMetadata;
-pub use crate::container::wav::muxer::WavMuxer;
-pub use crate::core;
 use crate::core::frame::AudioFormat;
 
 #[derive(Debug, Clone, Copy)]
-pub struct WavFormat {
+pub struct RawPcmFormat {
 	pub channels: u8,
 	pub sample_rate: u32,
 	pub bit_depth: u16,
-	pub format_code: u16,
 }
 
-impl Default for WavFormat {
+impl Default for RawPcmFormat {
 	fn default() -> Self {
-		// defaut is pcm_16
-		Self { channels: 2, sample_rate: 44100, bit_depth: 16, format_code: 1 }
+		// default is pcm_16, stereo, 44.1kHz
+		Self { channels: 2, sample_rate: 44100, bit_depth: 16 }
 	}
 }
 
-impl WavFormat {
+impl RawPcmFormat {
 	pub fn new_for_codec(codec: &str) -> Result<Self, String> {
 		match codec {
 			codecs::audio::PCM_S16LE => Ok(Self::default()),
 			codecs::audio::PCM_S24LE => Ok(Self { bit_depth: 24, ..Self::default() }),
-			codecs::audio::PCM_F32LE => Ok(Self { bit_depth: 32, format_code: 3, ..Self::default() }),
-			_ => Err(format!("wav codec '{}' is not supported", codec)),
-		}
-	}
-
-	pub fn to_raw_format(&self) -> raw::RawPcmFormat {
-		raw::RawPcmFormat {
-			channels: self.channels,
-			sample_rate: self.sample_rate,
-			bit_depth: self.bit_depth,
+			codecs::audio::PCM_F32LE => Ok(Self { bit_depth: 32, ..Self::default() }),
+			_ => Err(format!("raw codec '{}' is not supported", codec)),
 		}
 	}
 
@@ -48,10 +34,7 @@ impl WavFormat {
 	}
 
 	pub fn byte_rate(&self) -> u32 {
-		self
-			.sample_rate
-			.saturating_mul(self.channels as u32)
-			.saturating_mul(self.bytes_per_sample() as u32)
+		self.sample_rate.saturating_mul(self.channels as u32).saturating_mul(self.bytes_per_sample() as u32)
 	}
 
 	pub fn block_align(&self) -> u16 {
@@ -80,11 +63,8 @@ impl WavFormat {
 		match codec {
 			codecs::audio::PCM_S16LE => self.bit_depth = 16,
 			codecs::audio::PCM_S24LE => self.bit_depth = 24,
-			codecs::audio::PCM_F32LE => {
-				self.bit_depth = 32;
-				self.format_code = 3;
-			}
-			_ => return Err(format!("wav codec '{}' is not supported", codec)),
+			codecs::audio::PCM_F32LE => self.bit_depth = 32,
+			_ => return Err(format!("raw codec '{}' is not supported", codec)),
 		}
 		Ok(())
 	}

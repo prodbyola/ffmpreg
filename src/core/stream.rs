@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::core::time::Time;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -14,11 +16,17 @@ pub struct Stream {
 	pub kind: StreamKind,
 	pub codec: String,
 	pub time: Time,
+	pub codec_private: Vec<u8>,
 }
 
 impl Stream {
 	pub fn new(id: u32, index: usize, kind: StreamKind, codec: String, time: Time) -> Self {
-		Self { id, index, kind, codec, time }
+		Self { id, index, kind, codec, time, codec_private: Vec::new() }
+	}
+
+	pub fn with_codec_private(mut self, codec_private: Vec<u8>) -> Self {
+		self.codec_private = codec_private;
+		self
 	}
 
 	#[inline(always)]
@@ -35,12 +43,9 @@ impl Stream {
 	pub fn is_subtitle(&self) -> bool {
 		matches!(self.kind, StreamKind::Subtitle)
 	}
-
-	pub fn display_name(&self) -> String {
-		format!("stream {} ({:?}) [{}]", self.index, self.kind, self.codec)
-	}
 }
 
+#[derive(Debug, Clone)]
 pub struct Streams {
 	inner: Vec<Stream>,
 }
@@ -84,5 +89,20 @@ impl Streams {
 
 	pub fn count_audio(&self) -> usize {
 		self.audio().count()
+	}
+}
+
+impl Display for Stream {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "stream {} ({:?}) [{}]", self.index, self.kind, self.codec)
+	}
+}
+
+impl Display for Streams {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		for stream in &self.inner {
+			write!(f, "{}\n", stream)?;
+		}
+		Ok(())
 	}
 }

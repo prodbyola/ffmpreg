@@ -1,5 +1,8 @@
-use crate::container::wav::{WavFormat, pcm_converter::PcmConverter};
-use crate::core::{AudioFormat, Encoder, Frame, Packet, Time};
+use crate::container::wav::{WavFormat, converter};
+use crate::core::Encoder;
+use crate::core::frame::{AudioFormat, Frame};
+use crate::core::packet::Packet;
+use crate::core::time::Time;
 use crate::io::Result;
 
 pub struct PcmEncoder {
@@ -42,9 +45,9 @@ impl Encoder for PcmEncoder {
 			let format = Self::wav_format(audio.format, audio.channels, self.sample_rate);
 			let target_format = Self::wav_format(target, audio.channels, self.sample_rate);
 
-			let samples = PcmConverter::to_f32(&audio.data, &format)?;
+			let samples = converter::to_f32(&audio.data, &format)?;
 
-			let data = PcmConverter::from_f32(&samples, &target_format)?;
+			let data = converter::from_f32(&samples, &target_format)?;
 			let packet = Packet::new(data, frame.stream_index, time);
 			return Ok(Some(packet.with_pts(frame.pts)));
 		}
