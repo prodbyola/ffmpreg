@@ -1,13 +1,12 @@
 use clap::Parser;
+use ffmpreg::EXIT_SUCCESS;
 use ffmpreg::cli::color;
 use ffmpreg::cli::{Cli, executor};
-use ffmpreg::{EXIT_FAILURE, EXIT_SUCCESS};
 
 fn main() {
 	let cli = Cli::parse();
 	if let Err(message) = executor::execute(cli) {
-		color::print_error(&message);
-		std::process::exit(EXIT_FAILURE);
+		message.render_and_exit();
 	}
 	color::print_success(None);
 	std::process::exit(EXIT_SUCCESS);

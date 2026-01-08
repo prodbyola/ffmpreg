@@ -1,14 +1,14 @@
-#[derive(Debug, Clone)]
-pub struct FrameSubtitle {
-	pub data: Vec<u8>,
-	pub format: SubtitleFormat,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SubtitleFormat {
 	SRT,
 	ASS,
 	VTT,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrameSubtitle {
+	pub data: Vec<u8>,
+	pub format: SubtitleFormat,
 }
 
 impl FrameSubtitle {

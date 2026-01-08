@@ -1,4 +1,5 @@
-use crate::io::{Error, ErrorKind, Result};
+use crate::message::Result;
+use crate::{error, message::Message};
 
 pub trait MediaWrite {
 	fn write(&mut self, buf: &[u8]) -> Result<usize>;
@@ -11,9 +12,8 @@ pub trait WritePrimitives: MediaWrite {
 		let mut written = 0;
 		while written < buf.len() {
 			match self.write(&buf[written..]) {
-				Ok(0) => return Err(Error::write_zero()),
+				Ok(0) => return Err(error!("write returned zero")),
 				Ok(n) => written += n,
-				Err(e) if matches!(e.kind(), ErrorKind::Interrupted) => continue,
 				Err(e) => return Err(e),
 			}
 		}
@@ -142,12 +142,12 @@ impl<W> StdWriteAdapter<W> {
 impl<W: std::io::Write> MediaWrite for StdWriteAdapter<W> {
 	#[inline]
 	fn write(&mut self, buf: &[u8]) -> Result<usize> {
-		self.inner.write(buf).map_err(Error::from)
+		self.inner.write(buf).map_err(|e| Message::from(e))
 	}
 
 	#[inline]
 	fn flush(&mut self) -> Result<()> {
-		self.inner.flush().map_err(Error::from)
+		self.inner.flush().map_err(|e| Message::from(e))
 	}
 }
 

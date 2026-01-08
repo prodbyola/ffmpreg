@@ -1,6 +1,6 @@
 use super::common::Pipeline;
-use crate::io::{Error, Result};
+use crate::{error, message::Result};
 
 pub fn run(_pipeline: Pipeline) -> Result<()> {
-	Err(Error::invalid_data("acc pipeline not implemented"))
+	Err(error!("acc pipeline not implemented"))
 }

@@ -1,30 +1,27 @@
 use super::utils;
-use crate::{
-	container::wav::WavFormat,
-	io::{self, Error},
-};
+use crate::{container::wav::WavFormat, error, message};
 
-pub fn to_f32(data: &[u8], format: &WavFormat) -> io::Result<Vec<f32>> {
+pub fn to_f32(data: &[u8], format: &WavFormat) -> message::Result<Vec<f32>> {
 	match format.bit_depth {
 		16 => from_pcm16(data),
 		24 => from_pcm24(data),
 		32 => from_pcm32(data),
-		_ => Err(Error::invalid_data("unsupported bit depth")),
+		_ => Err(error!("unsupported bit depth")),
 	}
 }
 
-pub fn from_f32(samples: &[f32], format: &WavFormat) -> io::Result<Vec<u8>> {
+pub fn from_f32(samples: &[f32], format: &WavFormat) -> message::Result<Vec<u8>> {
 	match format.bit_depth {
 		16 => to_pcm16(samples),
 		24 => to_pcm24(samples),
 		32 => to_pcm32(samples),
-		_ => Err(Error::invalid_data("unsupported bit depth")),
+		_ => Err(error!("unsupported bit depth")),
 	}
 }
 
-fn from_pcm16(data: &[u8]) -> io::Result<Vec<f32>> {
+fn from_pcm16(data: &[u8]) -> message::Result<Vec<f32>> {
 	if data.len() % 2 != 0 {
-		return Err(Error::invalid_data("invalid pcm16 length"));
+		return Err(error!("invalid pcm16 length"));
 	}
 
 	let iter = data.chunks_exact(2);
@@ -33,9 +30,9 @@ fn from_pcm16(data: &[u8]) -> io::Result<Vec<f32>> {
 	Ok(value.map(utils::normalize_pcm16).collect())
 }
 
-fn from_pcm24(data: &[u8]) -> io::Result<Vec<f32>> {
+fn from_pcm24(data: &[u8]) -> message::Result<Vec<f32>> {
 	if data.len() % 3 != 0 {
-		return Err(Error::invalid_data("invalid pcm24 length"));
+		return Err(error!("invalid pcm24 length"));
 	}
 	let mut result = Vec::with_capacity(data.len() / 3);
 	for chunk in data.chunks_exact(3) {
@@ -45,9 +42,9 @@ fn from_pcm24(data: &[u8]) -> io::Result<Vec<f32>> {
 	Ok(result)
 }
 
-fn from_pcm32(data: &[u8]) -> io::Result<Vec<f32>> {
+fn from_pcm32(data: &[u8]) -> message::Result<Vec<f32>> {
 	if data.len() % 4 != 0 {
-		return Err(Error::invalid_data("invalid pcm32 length"));
+		return Err(error!("invalid pcm32 length"));
 	}
 	let iter = data.chunks_exact(4);
 	let value = iter.map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]));
@@ -55,11 +52,11 @@ fn from_pcm32(data: &[u8]) -> io::Result<Vec<f32>> {
 	Ok(value.map(utils::normalize_pcm32).collect())
 }
 
-fn to_pcm16(samples: &[f32]) -> io::Result<Vec<u8>> {
+fn to_pcm16(samples: &[f32]) -> message::Result<Vec<u8>> {
 	Ok(samples.iter().flat_map(|&s| utils::denormalize_pcm16(s).to_le_bytes()).collect())
 }
 
-fn to_pcm24(samples: &[f32]) -> io::Result<Vec<u8>> {
+fn to_pcm24(samples: &[f32]) -> message::Result<Vec<u8>> {
 	let mut buf = Vec::with_capacity(samples.len() * 3);
 	for &s in samples {
 		let val = utils::denormalize_pcm24(s);
@@ -71,6 +68,6 @@ fn to_pcm24(samples: &[f32]) -> io::Result<Vec<u8>> {
 	Ok(buf)
 }
 
-fn to_pcm32(samples: &[f32]) -> io::Result<Vec<u8>> {
+fn to_pcm32(samples: &[f32]) -> message::Result<Vec<u8>> {
 	Ok(samples.iter().flat_map(|&s| utils::denormalize_pcm32(s).to_le_bytes()).collect())
 }

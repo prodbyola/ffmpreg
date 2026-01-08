@@ -1,3 +1,5 @@
+use crate::message::Result;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeekFrom {
 	Start(u64),
@@ -28,20 +30,20 @@ impl From<std::io::SeekFrom> for SeekFrom {
 }
 
 pub trait MediaSeek {
-	fn seek(&mut self, pos: SeekFrom) -> crate::io::Result<u64>;
+	fn seek(&mut self, pos: SeekFrom) -> Result<u64>;
 
 	#[inline]
-	fn stream_position(&mut self) -> crate::io::Result<u64> {
+	fn stream_position(&mut self) -> Result<u64> {
 		self.seek(SeekFrom::Current(0))
 	}
 
 	#[inline]
-	fn rewind(&mut self) -> crate::io::Result<()> {
+	fn rewind(&mut self) -> Result<()> {
 		self.seek(SeekFrom::Start(0))?;
 		Ok(())
 	}
 
-	fn stream_len(&mut self) -> crate::io::Result<u64> {
+	fn stream_len(&mut self) -> Result<u64> {
 		let current = self.stream_position()?;
 		let end = self.seek(SeekFrom::End(0))?;
 		if current != end {
@@ -79,8 +81,8 @@ impl<S> StdSeekAdapter<S> {
 
 impl<S: std::io::Seek> MediaSeek for StdSeekAdapter<S> {
 	#[inline]
-	fn seek(&mut self, pos: SeekFrom) -> crate::io::Result<u64> {
-		self.inner.seek(pos.into()).map_err(crate::io::Error::from)
+	fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+		self.inner.seek(pos.into()).map_err(|e| crate::message::Message::from(e))
 	}
 }
 
@@ -123,14 +125,14 @@ impl<R, S> SeekableReader<R, S> {
 
 impl<R: crate::io::MediaRead, S> crate::io::MediaRead for SeekableReader<R, S> {
 	#[inline]
-	fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
+	fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
 		self.reader.read(buf)
 	}
 }
 
 impl<R, S: MediaSeek> MediaSeek for SeekableReader<R, S> {
 	#[inline]
-	fn seek(&mut self, pos: SeekFrom) -> crate::io::Result<u64> {
+	fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
 		self.seeker.seek(pos)
 	}
 }
@@ -174,19 +176,19 @@ impl<W, S> SeekableWriter<W, S> {
 
 impl<W: crate::io::MediaWrite, S> crate::io::MediaWrite for SeekableWriter<W, S> {
 	#[inline]
-	fn write(&mut self, buf: &[u8]) -> crate::io::Result<usize> {
+	fn write(&mut self, buf: &[u8]) -> Result<usize> {
 		self.writer.write(buf)
 	}
 
 	#[inline]
-	fn flush(&mut self) -> crate::io::Result<()> {
+	fn flush(&mut self) -> Result<()> {
 		self.writer.flush()
 	}
 }
 
 impl<W, S: MediaSeek> MediaSeek for SeekableWriter<W, S> {
 	#[inline]
-	fn seek(&mut self, pos: SeekFrom) -> crate::io::Result<u64> {
+	fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
 		self.seeker.seek(pos)
 	}
 }

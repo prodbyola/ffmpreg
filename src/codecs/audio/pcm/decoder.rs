@@ -1,18 +1,17 @@
 use crate::container::wav::WavFormat;
-use crate::core::frame::{AudioFormat, Frame, FrameAudio};
+use crate::core::frame::{AudioFormat, Channels, Frame, FrameAudio};
 use crate::core::packet::Packet;
-use crate::core::time::Time;
 use crate::core::traits::Decoder;
-use crate::io::Result as IoResult;
+use crate::message::Result;
 
 pub struct PcmDecoder {
 	sample_rate: u32,
-	channels: u8,
+	channels: Channels,
 	bytes_per_sample: usize,
 }
 
 impl PcmDecoder {
-	pub fn new(sample_rate: u32, channels: u8, bytes_per_sample: usize) -> Self {
+	pub fn new(sample_rate: u32, channels: Channels, bytes_per_sample: usize) -> Self {
 		Self { sample_rate, channels, bytes_per_sample }
 	}
 
@@ -22,12 +21,12 @@ impl PcmDecoder {
 }
 
 impl Decoder for PcmDecoder {
-	fn decode(&mut self, packet: Packet) -> IoResult<Option<Frame>> {
+	fn decode(&mut self, packet: Packet) -> Result<Option<Frame>> {
 		if packet.is_empty() {
 			return Ok(None);
 		}
 
-		let nb_samples = packet.data.len() / (self.channels as usize * self.bytes_per_sample);
+		let nb_samples = packet.data.len() / (self.channels.count() as usize * self.bytes_per_sample);
 
 		let audio_format = match self.bytes_per_sample {
 			2 => AudioFormat::PCM16,
@@ -39,13 +38,13 @@ impl Decoder for PcmDecoder {
 		let audio = FrameAudio::new(packet.data, self.sample_rate, self.channels, audio_format);
 		let audio = audio.with_nb_samples(nb_samples);
 
-		let time = Time::new(1, self.sample_rate);
-		let frame = Frame::new_audio(audio, time, packet.stream_index, 0).with_pts(packet.pts);
+		// let time = Time::new(1, self.sample_rate);
+		let frame = Frame::new_audio(audio, packet.stream_id);
 
-		Ok(Some(frame))
+		Ok(Some(frame.with_pts(packet.pts)))
 	}
 
-	fn flush(&mut self) -> IoResult<Option<Frame>> {
+	fn flush(&mut self) -> Result<Option<Frame>> {
 		Ok(None)
 	}
 }

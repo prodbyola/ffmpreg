@@ -1,6 +1,6 @@
 use crate::core::frame::Frame;
 use crate::core::packet::Packet;
-use crate::io::Result;
+use crate::message::Result;
 
 pub trait Encoder {
 	fn encode(&mut self, frame: Frame) -> Result<Option<Packet>>;

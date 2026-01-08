@@ -4,7 +4,8 @@ use crate::cli::utils;
 use crate::codecs::audio::pcm::{PcmDecoder, PcmEncoder};
 use crate::container::{self, raw, wav};
 use crate::core::{Demuxer, Muxer};
-use crate::io::{Error, File, Result};
+use crate::io::{Error, File};
+use crate::message::Result;
 
 pub fn run(pipeline: Pipeline) -> Result<()> {
 	let input_extension = utils::get_extension(&pipeline.input)?;

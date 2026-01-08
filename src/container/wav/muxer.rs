@@ -3,7 +3,8 @@ use crate::core::Muxer;
 use crate::core::packet::Packet;
 use crate::core::stream::{self, Stream, StreamKind};
 use crate::core::time::Time;
-use crate::io::{MediaSeek, MediaWrite, Result, SeekFrom, WritePrimitives};
+use crate::io::{MediaSeek, MediaWrite, SeekFrom, WritePrimitives};
+use crate::message::Result;
 
 pub struct WavMuxer<W: MediaWrite + MediaSeek> {
 	writer: W,
@@ -49,7 +50,7 @@ impl<W: MediaWrite + MediaSeek> WavMuxer<W> {
 		};
 		writer.write_u32_le(fmt_size)?;
 		writer.write_u16_le(format.format_code)?;
-		writer.write_u16_le(format.channels as u16)?;
+		writer.write_u16_le(format.channels.count() as u16)?;
 		writer.write_u32_le(format.sample_rate)?;
 		writer.write_u32_le(format.byte_rate())?;
 		writer.write_u16_le(format.block_align())?;
@@ -59,7 +60,7 @@ impl<W: MediaWrite + MediaSeek> WavMuxer<W> {
 			writer.write_u16_le(0)?;
 		} else if format.format_code == 0x11 {
 			writer.write_u16_le(4)?;
-			let spb = ((512 - 4 * format.channels as usize) * 2 + 1) as u16;
+			let spb = ((512 - 4 * format.channels.count() as usize) * 2 + 1) as u16;
 			writer.write_u16_le(spb)?;
 		}
 

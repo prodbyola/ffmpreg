@@ -1,5 +1,6 @@
 use super::track::parse_track_id;
-use crate::{cli::config::parse_flags, io::Result};
+use crate::cli::config::parse_flags;
+use crate::message::Result;
 
 #[derive(Debug, Default)]
 pub struct AudioConfig {

@@ -3,7 +3,8 @@ use crate::core::Muxer;
 use crate::core::packet::Packet;
 use crate::core::stream::{self, Stream, StreamKind};
 use crate::core::time::Time;
-use crate::io::{MediaSeek, MediaWrite, Result, WritePrimitives};
+use crate::io::{MediaSeek, MediaWrite, WritePrimitives};
+use crate::message::Result;
 
 pub struct RawPcmMuxer<W: MediaWrite + MediaSeek> {
 	writer: W,

@@ -3,7 +3,7 @@ pub mod codecs;
 pub mod container;
 pub mod core;
 pub mod io;
-// pub mod messages;
+pub mod message;
 pub mod transform;
 
 pub const EXIT_FAILURE: i32 = 1;

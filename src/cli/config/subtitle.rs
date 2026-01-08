@@ -1,8 +1,5 @@
 use super::track::parse_track_id;
-use crate::{
-	cli::config::parse_flags,
-	io::{Error, Result},
-};
+use crate::{cli::config::parse_flags, error, message::Result};
 
 #[derive(Debug, Default)]
 pub struct SubtitleConfig {
@@ -64,7 +61,7 @@ pub fn parse_subtitle(tokens: Vec<String>) -> Result<SubtitleConfig> {
 	let language = map.get("language").cloned();
 
 	if track.is_none() && language.is_none() && !config.is_empty() {
-		return Err(Error::invalid_data("subtitle needs track or language"));
+		return Err(error!("subtitle needs track or language"));
 	}
 
 	config.set_language(language);

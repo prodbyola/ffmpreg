@@ -1,8 +1,7 @@
-mod audio;
-mod subtitle;
-mod video;
+pub mod audio;
+pub mod subtitle;
+pub mod video;
 
-use crate::core::time::Time;
 pub use audio::*;
 pub use subtitle::*;
 pub use video::*;
@@ -16,47 +15,30 @@ pub enum FrameKind {
 
 #[derive(Debug, Clone)]
 pub enum FrameData {
-	Audio(audio::FrameAudio),
-	Video(video::FrameVideo),
-	Subtitle(subtitle::FrameSubtitle),
+	Audio(FrameAudio),
+	Video(FrameVideo),
+	Subtitle(FrameSubtitle),
 }
 
 #[derive(Debug, Clone)]
 pub struct Frame {
 	pub pts: i64,
 	pub dts: Option<i64>,
-	pub time: Time,
-	pub stream_index: usize,
 	pub stream_id: u32,
 	pub data: FrameData,
 }
 
 impl Frame {
-	pub fn new_audio(
-		audio: audio::FrameAudio,
-		time: Time,
-		stream_index: usize,
-		stream_id: u32,
-	) -> Self {
-		Self { pts: 0, dts: None, time, stream_index, data: FrameData::Audio(audio), stream_id }
+	pub fn new_audio(audio: FrameAudio, stream_id: u32) -> Self {
+		Self { pts: 0, dts: None, data: FrameData::Audio(audio), stream_id }
 	}
 
-	pub fn new_video(
-		video: video::FrameVideo,
-		time: Time,
-		stream_index: usize,
-		stream_id: u32,
-	) -> Self {
-		Self { pts: 0, dts: None, time, stream_index, data: FrameData::Video(video), stream_id }
+	pub fn new_video(video: FrameVideo, stream_id: u32) -> Self {
+		Self { pts: 0, dts: None, data: FrameData::Video(video), stream_id }
 	}
 
-	pub fn new_subtitle(
-		subtitle: subtitle::FrameSubtitle,
-		time: Time,
-		stream_index: usize,
-		stream_id: u32,
-	) -> Self {
-		Self { pts: 0, dts: None, time, stream_index, data: FrameData::Subtitle(subtitle), stream_id }
+	pub fn new_subtitle(subtitle: FrameSubtitle, stream_id: u32) -> Self {
+		Self { pts: 0, dts: None, data: FrameData::Subtitle(subtitle), stream_id }
 	}
 
 	pub fn with_pts(mut self, pts: i64) -> Self {
@@ -64,23 +46,38 @@ impl Frame {
 		self
 	}
 
-	pub fn with_dts(mut self, dts: i64) -> Self {
-		self.dts = Some(dts);
-		self
-	}
-
-	pub fn size(&self) -> usize {
+	#[inline]
+	pub fn audio(&self) -> Option<&FrameAudio> {
 		match &self.data {
-			FrameData::Audio(a) => a.data.len(),
-			FrameData::Video(v) => v.data.len(),
-			FrameData::Subtitle(c) => c.data.len(),
+			FrameData::Audio(audio) => Some(audio),
+			_ => None,
 		}
 	}
 
-	pub fn is_empty(&self) -> bool {
-		self.size() == 0
+	#[inline]
+	pub fn audio_mut(&mut self) -> Option<&mut FrameAudio> {
+		match &mut self.data {
+			FrameData::Audio(audio) => Some(audio),
+			_ => None,
+		}
 	}
 
+	#[inline]
+	pub fn video(&self) -> Option<&FrameVideo> {
+		match &self.data {
+			FrameData::Video(video) => Some(video),
+			_ => None,
+		}
+	}
+	#[inline]
+	pub fn video_mut(&mut self) -> Option<&mut FrameVideo> {
+		match &mut self.data {
+			FrameData::Video(video) => Some(video),
+			_ => None,
+		}
+	}
+
+	#[inline]
 	pub fn kind(&self) -> FrameKind {
 		match &self.data {
 			FrameData::Audio(_) => FrameKind::Audio,
@@ -89,53 +86,30 @@ impl Frame {
 		}
 	}
 
-	pub fn is_keyframe(&self) -> bool {
-		matches!(&self.data, FrameData::Video(v) if v.keyframe)
+	#[inline]
+	pub fn audio_kind(&self) -> bool {
+		matches!(self.kind(), FrameKind::Audio)
 	}
 
-	pub fn duration_seconds(&self) -> f64 {
-		self.time.to_seconds(self.pts)
+	#[inline]
+	pub fn video_kind(&self) -> bool {
+		matches!(self.kind(), FrameKind::Video)
 	}
 
-	pub fn audio(&self) -> Option<&audio::FrameAudio> {
-		if let FrameData::Audio(audio) = &self.data {
-			return Some(audio);
+	#[inline]
+	pub fn subtitle_kind(&self) -> bool {
+		matches!(self.kind(), FrameKind::Subtitle)
+	}
+
+	pub fn size(&self) -> usize {
+		match &self.data {
+			FrameData::Audio(a) => a.data.len(),
+			FrameData::Video(v) => v.data.len(),
+			FrameData::Subtitle(s) => s.data.len(),
 		}
-		None
 	}
 
-	pub fn audio_mut(&mut self) -> Option<&mut audio::FrameAudio> {
-		if let FrameData::Audio(audio) = &mut self.data {
-			return Some(audio);
-		}
-		None
-	}
-
-	pub fn video(&self) -> Option<&video::FrameVideo> {
-		if let FrameData::Video(video) = &self.data {
-			return Some(video);
-		}
-		None
-	}
-
-	pub fn video_mut(&mut self) -> Option<&mut video::FrameVideo> {
-		if let FrameData::Video(video) = &mut self.data {
-			return Some(video);
-		}
-		None
-	}
-
-	pub fn subtitle(&self) -> Option<&subtitle::FrameSubtitle> {
-		if let FrameData::Subtitle(subtitle) = &self.data {
-			return Some(subtitle);
-		}
-		None
-	}
-
-	pub fn subtitle_mut(&mut self) -> Option<&mut subtitle::FrameSubtitle> {
-		if let FrameData::Subtitle(subtitle) = &mut self.data {
-			return Some(subtitle);
-		}
-		None
+	pub fn is_empty(&self) -> bool {
+		self.size() == 0
 	}
 }

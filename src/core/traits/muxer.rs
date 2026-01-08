@@ -1,6 +1,6 @@
 use crate::core::packet::Packet;
 use crate::core::stream::Streams;
-use crate::io::Result;
+use crate::message::Result;
 
 pub trait Muxer {
 	fn streams(&self) -> &Streams;

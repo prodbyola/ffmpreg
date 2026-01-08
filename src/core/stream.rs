@@ -30,17 +30,17 @@ impl Stream {
 	}
 
 	#[inline(always)]
-	pub fn is_audio(&self) -> bool {
+	pub fn audio_kind(&self) -> bool {
 		matches!(self.kind, StreamKind::Audio)
 	}
 
 	#[inline(always)]
-	pub fn is_video(&self) -> bool {
+	pub fn video_kind(&self) -> bool {
 		matches!(self.kind, StreamKind::Video)
 	}
 
 	#[inline(always)]
-	pub fn is_subtitle(&self) -> bool {
+	pub fn subtitle_kind(&self) -> bool {
 		matches!(self.kind, StreamKind::Subtitle)
 	}
 }
@@ -67,24 +67,20 @@ impl Streams {
 		&self.inner
 	}
 
-	pub fn get(&self, index: usize) -> Option<&Stream> {
-		self.inner.get(index)
+	pub fn get(&self, index: u32) -> Option<&Stream> {
+		self.inner.get(index as usize)
 	}
 
 	pub fn audio(&self) -> impl Iterator<Item = &Stream> {
-		self.inner.iter().filter(|s| s.is_audio())
+		self.inner.iter().filter(|s| s.audio_kind())
 	}
 
-	// pub fn par_audio(&self) -> impl ParallelIterator<Item = &Stream> {
-	// 	self.inner.par_iter().filter(|s| s.is_audio())
-	// }
-
 	pub fn video(&self) -> impl Iterator<Item = &Stream> {
-		self.inner.iter().filter(|s| s.is_video())
+		self.inner.iter().filter(|s| s.video_kind())
 	}
 
 	pub fn subtitle(&self) -> impl Iterator<Item = &Stream> {
-		self.inner.iter().filter(|s| s.is_subtitle())
+		self.inner.iter().filter(|s| s.subtitle_kind())
 	}
 
 	pub fn count_audio(&self) -> usize {

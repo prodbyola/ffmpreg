@@ -1,8 +1,10 @@
 use super::header::WavHeader;
 use super::{WavFormat, WavMetadata};
+use crate::core::frame::Channels;
 use crate::core::packet::Packet;
 use crate::core::{Demuxer, stream, time};
-use crate::io::{Error, MediaRead, ReadPrimitives, Result};
+use crate::io::{MediaRead, ReadPrimitives};
+use crate::{error, message::Result};
 
 pub struct WavDemuxer<R: MediaRead> {
 	reader: R,
@@ -45,7 +47,7 @@ impl<R: MediaRead> WavDemuxer<R> {
 		Self::check_fourcc(reader, "WAVE")?;
 
 		let mut header = WavHeader {
-			channels: 0,
+			channels: Channels::Mono,
 			sample_rate: 0,
 			byte_rate: 0,
 			block_align: 0,
@@ -69,11 +71,12 @@ impl<R: MediaRead> WavDemuxer<R> {
 
 	fn read_fmt_chunk(reader: &mut R, chunk_size: u64, header: &mut WavHeader) -> Result<()> {
 		if chunk_size < 16 {
-			return Err(Error::invalid_data("fmt chunk too small"));
+			return Err(error!("fmt chunk too small"));
 		}
 
 		header.format_code = reader.read_u16_le()?;
-		header.channels = reader.read_u16_le()? as u8;
+		let channel_count = reader.read_u16_le()? as u8;
+		header.channels = Channels::from_count(channel_count);
 		header.sample_rate = reader.read_u32_le()?;
 		header.byte_rate = reader.read_u32_le()?;
 		header.block_align = reader.read_u16_le()?;
@@ -135,7 +138,7 @@ impl<R: MediaRead> WavDemuxer<R> {
 	fn check_fourcc(reader: &mut R, expected: &str) -> Result<()> {
 		let actual = Self::read_fourcc(reader)?;
 		if actual != expected {
-			return Err(Error::invalid_data(&format!("expected {}, found {}", expected, actual)));
+			return Err(error!("expected {}, found {}", expected, actual));
 		}
 		Ok(())
 	}

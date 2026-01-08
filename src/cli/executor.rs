@@ -1,9 +1,9 @@
 use crate::cli::{config, pipeline, utils};
 use crate::container;
 use crate::core::compatible;
-use crate::{cli, io};
+use crate::{cli, error, message};
 
-pub fn execute(cli: cli::Cli) -> io::Result<()> {
+pub fn execute(cli: cli::Cli) -> message::Result<()> {
 	let mut pipe = pipeline::Pipeline::new(&cli.input, &cli.output);
 
 	let audio = config::parse_audio(cli.audio)?;
@@ -43,10 +43,8 @@ pub fn execute(cli: cli::Cli) -> io::Result<()> {
 			match input_ext.as_str() {
 				container::WAV => pipeline::wav::run(pipe),
 				container::RAW | container::PCM => pipeline::raw::run(pipe),
-				// container::AAC => pipeline::aac::run(pipe),
-				// container::MKV => pipeline::mkv::run(pipe),
 				container::MOV => pipeline::webm::run(pipe),
-				_ => Err(io::Error::invalid_data(format!("unsupported '{}' format", input_ext))),
+				_ => Err(error!("unsupported '{}' format", input_ext)),
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 use crate::core::Transform;
 use crate::core::frame::Frame;
-use crate::io::Result;
+use crate::message::Result;
 
 #[allow(dead_code)]
 pub struct Volume {

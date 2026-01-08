@@ -1,4 +1,4 @@
-use crate::{core::frame::Frame, io::Result};
+use crate::{core::frame::Frame, message::Result};
 
 pub trait Transform: Send {
 	fn apply(&mut self, frame: Frame) -> Result<Frame>;

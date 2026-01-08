@@ -1,6 +1,6 @@
 use super::common::Pipeline;
-use crate::io::{Error, Result};
+use crate::{error, message::Result};
 
 pub fn run(_pipeline: Pipeline) -> Result<()> {
-	Err(Error::invalid_data("webm pipeline not implemented"))
+	Err(error!("webm pipeline not implemented"))
 }

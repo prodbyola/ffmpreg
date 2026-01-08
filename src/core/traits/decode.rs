@@ -1,6 +1,6 @@
 use crate::{
 	core::{frame::Frame, packet::Packet},
-	io::Result,
+	message::Result,
 };
 
 pub trait Decoder {

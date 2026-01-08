@@ -134,3 +134,4 @@
 - [ ] Advanced audio: Delay / Reverb / Chorus / Phaser
 - [ ] Advanced audio: Multiband / Sidechain / Saturation / Distortion
 - [ ] Full metadata support: ID3v2, Vorbis comments, MP4/iTunes, WAV LIST INFO
+

@@ -1,9 +1,9 @@
 use crate::codecs;
-use crate::core::frame::AudioFormat;
+use crate::core::frame::{AudioFormat, Channels};
 
 #[derive(Debug, Clone, Copy)]
 pub struct RawPcmFormat {
-	pub channels: u8,
+	pub channels: Channels,
 	pub sample_rate: u32,
 	pub bit_depth: u16,
 }
@@ -11,7 +11,7 @@ pub struct RawPcmFormat {
 impl Default for RawPcmFormat {
 	fn default() -> Self {
 		// default is pcm_16, stereo, 44.1kHz
-		Self { channels: 2, sample_rate: 44100, bit_depth: 16 }
+		Self { channels: Channels::Stereo, sample_rate: 44100, bit_depth: 16 }
 	}
 }
 
@@ -30,15 +30,18 @@ impl RawPcmFormat {
 	}
 
 	pub fn bytes_per_frame(&self) -> usize {
-		self.bytes_per_sample() * self.channels as usize
+		self.bytes_per_sample() * self.channels.count() as usize
 	}
 
 	pub fn byte_rate(&self) -> u32 {
-		self.sample_rate.saturating_mul(self.channels as u32).saturating_mul(self.bytes_per_sample() as u32)
+		self
+			.sample_rate
+			.saturating_mul(self.channels.count() as u32)
+			.saturating_mul(self.bytes_per_sample() as u32)
 	}
 
 	pub fn block_align(&self) -> u16 {
-		self.channels as u16 * (self.bit_depth / 8)
+		self.channels.count() as u16 * (self.bit_depth / 8)
 	}
 
 	pub fn audio_format(&self) -> AudioFormat {

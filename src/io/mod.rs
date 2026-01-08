@@ -75,6 +75,14 @@ impl Error {
 	pub fn not_seekable() -> Self {
 		Self::new(ErrorKind::NotSeekable)
 	}
+
+	pub fn to_message(self) -> crate::message::Message {
+		let text = match &self.message {
+			Some(msg) => msg.clone(),
+			None => format!("{:?}", self.kind),
+		};
+		crate::message::Message::error(text)
+	}
 }
 
 impl core::fmt::Display for Error {
@@ -105,4 +113,8 @@ impl From<std::io::Error> for Error {
 	}
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+impl From<Error> for crate::message::Message {
+	fn from(err: Error) -> Self {
+		err.to_message()
+	}
+}

@@ -1,7 +1,8 @@
 use super::RawPcmFormat;
 use crate::core::packet::Packet;
 use crate::core::{Demuxer, stream, time};
-use crate::io::{MediaRead, Result};
+use crate::io::MediaRead;
+use crate::message::Result;
 
 pub struct RawPcmDemuxer<R: MediaRead> {
 	reader: R,

@@ -1,9 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{
-	codecs, container,
-	io::{self, Error},
-};
+use crate::{codecs, container, error, message};
 
 #[derive(Default, Debug, Clone)]
 pub struct ContainerCompatible {
@@ -30,29 +27,26 @@ impl ContainerCompatible {
 		self.subtitle_formats.extend(formats.into_iter().map(|s| s.into()));
 	}
 
-	pub fn assert_video_codec(&self, codec: &str) -> io::Result<()> {
+	pub fn assert_video_codec(&self, codec: &str) -> message::Result<()> {
 		if self.video_codecs.contains(codec) {
 			return Ok(());
 		}
-		let message = format!("codec '{}' not supported in '{}'", codec, self.name);
-		Err(Error::invalid_data(message))
+		Err(error!("codec '{}' not supported in '{}'", codec, self.name))
 	}
 
-	pub fn assert_audio_codec(&self, codec: &str) -> io::Result<()> {
+	pub fn assert_audio_codec(&self, codec: &str) -> message::Result<()> {
 		if self.audio_codecs.contains(codec) {
 			return Ok(());
 		}
-		let message = format!("codec '{}' not supported in '{}'", codec, self.name);
-		Err(Error::invalid_data(message))
+		Err(error!("codec '{}' not supported in '{}'", codec, self.name))
 	}
 
-	pub fn assert_subtitle_format(&self, fmt: &str) -> io::Result<()> {
+	pub fn assert_subtitle_format(&self, fmt: &str) -> message::Result<()> {
 		if self.subtitle_formats.contains(fmt) {
 			return Ok(());
 		}
 
-		let message = format!("format '{}' not supported in '{}'", fmt, self.name);
-		Err(Error::invalid_data(message))
+		Err(error!("format '{}' not supported in '{}'", fmt, self.name))
 	}
 }
 
@@ -194,38 +188,42 @@ impl Compatible {
 		self.graph.get(extension)
 	}
 
-	pub fn assert_container_supported(&self, extension: &str) -> io::Result<()> {
+	pub fn assert_container_supported(&self, extension: &str) -> message::Result<()> {
 		if self.graph.contains_key(extension) {
 			return Ok(());
 		}
-		Err(Error::invalid_data(format!("'{}' is not supported", extension)))
+		Err(error!("'{}' is not supported", extension))
 	}
 
-	pub fn assert_video_supported(&self, container: &str, codec: &str) -> io::Result<()> {
+	pub fn assert_video_supported(&self, container: &str, codec: &str) -> message::Result<()> {
 		match self.graph.get(container) {
 			Some(container) => container.assert_video_codec(codec),
-			None => Err(Error::invalid_data(format!("'{}' is not supported", container))),
+			None => Err(error!("'{}' is not supported", container)),
 		}
 	}
 
-	pub fn assert_audio_supported(&self, container: &str, codec: &str) -> io::Result<()> {
+	pub fn assert_audio_supported(&self, container: &str, codec: &str) -> message::Result<()> {
 		match self.graph.get(container) {
 			Some(container) => container.assert_audio_codec(codec),
-			None => Err(Error::invalid_data(format!("'{}' is not supported", container))),
+			None => Err(error!("'{}' is not supported", container)),
 		}
 	}
 
-	pub fn assert_subtitle_supported(&self, container: &str, fmt: &str) -> io::Result<()> {
+	pub fn assert_subtitle_supported(&self, container: &str, fmt: &str) -> message::Result<()> {
 		match self.graph.get(container) {
 			Some(container) => container.assert_subtitle_format(fmt),
-			None => Err(Error::invalid_data(format!("'{}' is not supported", container))),
+			None => Err(error!("'{}' is not supported", container)),
 		}
 	}
 
-	pub fn assert_subtitle_format_supported(&self, container: &str, fmt: &str) -> io::Result<()> {
+	pub fn assert_subtitle_format_supported(
+		&self,
+		container: &str,
+		fmt: &str,
+	) -> message::Result<()> {
 		match self.graph.get(container) {
 			Some(container) => container.assert_subtitle_format(fmt),
-			None => Err(Error::invalid_data(format!("'{}' is not supported", container))),
+			None => Err(error!("'{}' is not supported", container)),
 		}
 	}
 }
